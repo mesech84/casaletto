@@ -461,7 +461,7 @@ textarea.form-input{resize:vertical;min-height:60px;line-height:1.4}
     <div class="card">
       <div class="row2">
         <div class="form-group"><label class="form-label">Tipo evento</label>
-          <select class="form-input" id="f-tipo"><option>Comunione</option><option>Matrimonio</option><option>Compleanno</option><option>Battesimo</option><option>Cena aziendale</option><option>Altro</option></select></div>
+          <select class="form-input" id="f-tipo"><option>Comunione</option><option>Cresima</option><option>Matrimonio</option><option>Compleanno</option><option>Battesimo</option><option>Cena aziendale</option><option>Altro</option></select></div>
         <div class="form-group"><label class="form-label">Data</label><input class="form-input" type="date" id="f-data"></div>
       </div>
       <div class="form-group"><label class="form-label">Nome cliente</label><input class="form-input" type="text" id="f-cli" placeholder="Es. Famiglia Rossi"></div>
@@ -531,12 +531,32 @@ textarea.form-input{resize:vertical;min-height:60px;line-height:1.4}
       </div>
 
       <div class="form-group"><label class="form-label">Note per il cliente</label><textarea class="form-input" id="f-note" placeholder="Altre richieste o indicazioni..."></textarea></div>
+
+      <!-- SCONTO -->
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:8px">
+          <span style="width:4px;height:18px;background:#c07000;border-radius:2px;display:inline-block"></span>
+          Sconto
+        </label>
+        <div class="row2">
+          <select class="form-input" id="f-sconto-tipo">
+            <option value="nessuno">Nessuno</option>
+            <option value="perc">Percentuale (%)</option>
+            <option value="persona">A persona (€/persona)</option>
+            <option value="importo">Importo libero (€)</option>
+          </select>
+          <input class="form-input" type="number" id="f-sconto-val" min="0" step="0.5" value="0" placeholder="Valore" style="display:none">
+        </div>
+      </div>
+
       <div class="tot-box">
         <div class="tot-row"><span>Costo menu per persona</span><span id="tv1">—</span></div>
         <div class="tot-row" id="tv-menu-tot-row" style="display:none"><span id="tv-menu-lbl">Menu (× persone)</span><span id="tv-menu-tot">—</span></div>
         <div class="tot-row" id="tv-srv-row" style="display:none"><span id="tv-srv-lbl">Servizi extra</span><span id="tv-srv">—</span></div>
         <div class="tot-row" id="tv-ms-row" style="display:none"><span>Menu speciali</span><span id="tv-ms">—</span></div>
         <div class="tot-row" id="tv-bev-row" style="display:none"><span id="tv-bev-lbl">Bevande</span><span id="tv-bev">—</span></div>
+        <div class="tot-row" id="tv-sub-row" style="display:none"><span>Subtotale</span><span id="tv-sub">—</span></div>
+        <div class="tot-row" id="tv-sconto-row" style="display:none;color:#c07000"><span id="tv-sconto-lbl">Sconto</span><span id="tv-sconto">—</span></div>
         <div class="tot-row" style="font-weight:600;color:#1a1a1a;border-top:1px solid rgba(0,0,0,.1);margin-top:4px;padding-top:4px"><span>Totale evento</span><span id="tv2">—</span></div>
         <div class="tot-row" style="color:#c07000"><span>Caparra richiesta</span><span id="tv3">—</span></div>
         <div class="tot-row main"><span>Saldo da versare</span><span id="tv4">—</span></div>
@@ -1121,6 +1141,33 @@ function fmtD(s, sh) {
 }
 function badge(stato) { return '<span class="badge '+(SC[stato]||'bgr')+'">'+stato+'</span>'; }
 function calTot(voci, pax) { return voci.reduce(function(s,v){ return s+(v.pax?v.p*pax:v.p); },0); }
+// ── SCONTO ────────────────────────────────────────────────────
+// Calcola l'importo dello sconto dato un totale lordo, il numero di persone e tipo/valore sconto.
+// Il risultato è sempre limitato a non superare il totale lordo (niente totali negativi).
+function calcolaScontoImporto(base, pax, tipo, valore) {
+  valore = parseFloat(valore) || 0;
+  if (!tipo || tipo === 'nessuno' || valore <= 0) return 0;
+  var sc = 0;
+  if (tipo === 'perc') sc = base * valore / 100;
+  else if (tipo === 'persona') sc = valore * (pax || 0);
+  else if (tipo === 'importo') sc = valore;
+  if (sc < 0) sc = 0;
+  if (sc > base) sc = base;
+  return sc;
+}
+function labelSconto(tipo, valore) {
+  if (tipo === 'perc') return 'Sconto '+valore+'%';
+  if (tipo === 'persona') return 'Sconto '+fmt(valore)+'/persona';
+  if (tipo === 'importo') return 'Sconto';
+  return 'Sconto';
+}
+// Totale netto (con sconto) di un preventivo salvato, usato in liste/archivio.
+// Nota: come calTot, considera solo le voci menu (coerente col comportamento esistente delle liste).
+function calTotNetto(p) {
+  var lordo = calTot(p.voci, p.pax);
+  var sc = calcolaScontoImporto(lordo, p.pax, p.scontoTipo, p.scontoVal);
+  return lordo - sc;
+}
 function uid() { return 't'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
 var _toast_t;
 function toast(msg, err) {
@@ -1845,7 +1892,11 @@ function calcTot() {
   var srv = (typeof totaleServizi==='function')       ? totaleServizi()       : 0;
   var ms  = (typeof totaleMenuSpeciali==='function')  ? totaleMenuSpeciali()  : 0;
   var bev = (typeof totaleBevande==='function')       ? totaleBevande()       : 0;
-  var tot = menuTot + srv + ms + bev;
+  var subtot = menuTot + srv + ms + bev;
+  var scTipo = document.getElementById('f-sconto-tipo') ? document.getElementById('f-sconto-tipo').value : 'nessuno';
+  var scVal  = document.getElementById('f-sconto-val')  ? document.getElementById('f-sconto-val').value  : 0;
+  var sconto = calcolaScontoImporto(subtot, pax, scTipo, scVal);
+  var tot = subtot - sconto;
 
   // Riga 1: costo per persona
   var el1=document.getElementById('tv1');
@@ -1882,6 +1933,20 @@ function calcTot() {
   if(lblBev){
     var bObj=BEVANDE_OPZIONI?BEVANDE_OPZIONI.find(function(x){return x.id===_bevandeSelId;}):null;
     lblBev.textContent = bObj ? bObj.nome : 'Bevande';
+  }
+
+  // Riga: subtotale + sconto (visibili solo se c'è uno sconto attivo)
+  var rowSub=document.getElementById('tv-sub-row'), valSub=document.getElementById('tv-sub');
+  var rowSc=document.getElementById('tv-sconto-row'), valSc=document.getElementById('tv-sconto'), lblSc=document.getElementById('tv-sconto-lbl');
+  if(sconto>0){
+    if(rowSub) rowSub.style.display='flex';
+    if(valSub) valSub.textContent=fmt(subtot);
+    if(rowSc) rowSc.style.display='flex';
+    if(valSc) valSc.textContent='− '+fmt(sconto);
+    if(lblSc) lblSc.textContent=labelSconto(scTipo,scVal);
+  } else {
+    if(rowSub) rowSub.style.display='none';
+    if(rowSc) rowSc.style.display='none';
   }
 
   // Totale, caparra, saldo
@@ -1930,6 +1995,7 @@ function nuovoPrev() {
   ['f-cli','f-email','f-tel','f-note'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('f-tipo').value='Comunione'; document.getElementById('f-pax').value='60';
   document.getElementById('f-cap').value='500'; document.getElementById('f-orario').value='13:00';
+  document.getElementById('f-sconto-tipo').value='nessuno'; document.getElementById('f-sconto-val').value=0; document.getElementById('f-sconto-val').style.display='none';
   document.getElementById('f-luogo').value='Sala ricevimenti principale';
   document.getElementById('anteprima-wrap').style.display='none';
   var d=new Date(); d.setDate(d.getDate()+30); document.getElementById('f-data').value=d.toISOString().split('T')[0];
@@ -1946,6 +2012,10 @@ function openPrev(i) {
   document.getElementById('f-cli').value=p.cli; document.getElementById('f-email').value=p.email||'';
   document.getElementById('f-tel').value=p.tel||''; document.getElementById('f-pax').value=p.pax;
   document.getElementById('f-cap').value=p.cap; document.getElementById('f-orario').value=p.orario||'13:00';
+  document.getElementById('f-sconto-tipo').value=p.scontoTipo||'nessuno';
+  document.getElementById('f-sconto-val').value=p.scontoVal||0;
+  document.getElementById('f-sconto-val').style.display=(p.scontoTipo&&p.scontoTipo!=='nessuno')?'block':'none';
+  document.getElementById('f-sconto-val').placeholder = p.scontoTipo==='perc' ? '% sconto' : (p.scontoTipo==='persona' ? '€ per persona' : '€ importo');
   document.getElementById('f-luogo').value=p.luogo||'Sala ricevimenti principale'; document.getElementById('f-note').value=p.note||'';
   document.getElementById('anteprima-wrap').style.display='none';
   document.getElementById('prev-form-title').textContent='Modifica preventivo';
@@ -1971,9 +2041,13 @@ function renderPrevLista() {
   if (!S.preventivi.length) { c.innerHTML='<div style="text-align:center;color:#aaa;padding:20px;font-size:13px">Nessun preventivo. Creane uno!</div>'; return; }
   c.innerHTML='';
   S.preventivi.slice().sort(function(a,b){return a.data.localeCompare(b.data);}).forEach(function(p){
-    var i=S.preventivi.indexOf(p), tot=calTot(p.voci,p.pax);
-    var row=document.createElement('div'); row.className='prev-row';
+    var i=S.preventivi.indexOf(p), tot=calTotNetto(p);
+    var row=document.createElement('div'); row.className='prev-row'; row.style.gap='8px';
     row.innerHTML='<div style="flex:1;min-width:0"><div class="list-name" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+p.cli+' '+badge(p.stato)+'</div><div class="list-detail">'+p.tipo+' · '+fmtD(p.data,true)+' · '+p.pax+' pers.</div></div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div class="list-price">'+fmt(tot)+'</div><div style="font-size:10px;color:#aaa">saldo '+fmt(tot-p.cap)+'</div></div>';
+    var bDup=document.createElement('button'); bDup.type='button'; bDup.title='Duplica preventivo'; bDup.textContent='⧉';
+    bDup.style.cssText='flex-shrink:0;width:30px;height:30px;border-radius:8px;border:1px solid rgba(0,0,0,.12);background:#fafaf8;color:#993556;font-size:14px;cursor:pointer';
+    (function(i2){ bDup.addEventListener('click',function(e){ e.stopPropagation(); duplicaPrev(i2); }); })(i);
+    row.appendChild(bDup);
     (function(i2){ row.addEventListener('click',function(){ openPrev(i2); }); })(i);
     c.appendChild(row);
   });
@@ -1987,6 +2061,8 @@ function salvaPrev() {
     cli:cli,email:document.getElementById('f-email').value,
     tel:document.getElementById('f-tel').value,
     pax:pax,cap:cap,
+    scontoTipo:document.getElementById('f-sconto-tipo').value,
+    scontoVal:parseFloat(document.getElementById('f-sconto-val').value)||0,
     stato:_prevIdx>=0?S.preventivi[_prevIdx].stato:'Bozza',
     data:document.getElementById('f-data').value,
     orario:document.getElementById('f-orario').value,
@@ -2014,7 +2090,11 @@ function mostraAnteprima() {
   var _pdfSrv=(typeof totaleServizi==='function')?totaleServizi():0;
   var _pdfMs=(typeof totaleMenuSpeciali==='function')?totaleMenuSpeciali():0;
   var _pdfBev=(typeof totaleBevande==='function')?totaleBevande():0;
-  var tot=pp*pax+flat+_pdfSrv+_pdfMs+_pdfBev;
+  var _pdfSub=pp*pax+flat+_pdfSrv+_pdfMs+_pdfBev;
+  var _pdfScTipo=document.getElementById('f-sconto-tipo').value;
+  var _pdfScVal=document.getElementById('f-sconto-val').value;
+  var _pdfSconto=calcolaScontoImporto(_pdfSub,pax,_pdfScTipo,_pdfScVal);
+  var tot=_pdfSub-_pdfSconto;
   var num='PRE-'+OGGI.getFullYear()+'-'+String(OGGI.getMonth()+1).padStart(2,'0')+String(Math.floor(Math.random()*900)+100);
   var cont=[r.tel,r.email,r.sito].filter(Boolean).join(' · ')||'<em style="color:#bbb">contatti da completare</em>';
   var _voList=_voci.filter(function(v){return v.n;});
@@ -2164,6 +2244,7 @@ function mostraAnteprima() {
           var costo=b.tipo==='pers'?prezzo*paxN:prezzo;
           return '<div class="pdf-tr" style="color:#0c447c;font-weight:500;border-top:0.5px solid #eee;margin-top:4px;padding-top:4px"><span>'+b.icona+' '+b.nome+(b.tipo==='pers'?' ('+paxN+' pers.)':'')+'</span><span>'+fmt(costo)+'</span></div>';
         })()
+        +(_pdfSconto>0?'<div class="pdf-tr" style="border-top:0.5px solid #eee;margin-top:4px;padding-top:4px"><span>Subtotale</span><span>'+fmt(_pdfSub)+'</span></div><div class="pdf-tr" style="color:#c07000;font-weight:500"><span>'+labelSconto(_pdfScTipo,_pdfScVal)+'</span><span>&minus; '+fmt(_pdfSconto)+'</span></div>':'')
         +'<div class="pdf-tr main"><span>Totale evento</span><span>'+fmt(tot)+'</span></div>'
         +'<div class="pdf-tr" style="color:#c07000"><span>Caparra richiesta</span><span>&minus; '+fmt(cap)+'</span></div>'
         +'<div class="pdf-tr" style="font-weight:700"><span>Saldo da versare</span><span>'+fmt(tot-cap)+'</span></div>'
@@ -2229,7 +2310,7 @@ function confSide() {
 var _archF='tutti';
 function renderArch() {
   var lista=document.getElementById('arch-lista');
-  var totV=S.preventivi.reduce(function(s,p){return s+calTot(p.voci,p.pax);},0);
+  var totV=S.preventivi.reduce(function(s,p){return s+calTotNetto(p);},0);
   document.getElementById('arch-num').textContent=S.preventivi.length;
   document.getElementById('arch-val').textContent=fmt(totV);
   document.getElementById('arch-conf').textContent=S.preventivi.filter(function(p){return p.stato==='Confermato';}).length;
@@ -2237,7 +2318,7 @@ function renderArch() {
   if (!filtered.length) { lista.innerHTML='<div class="card" style="text-align:center;color:#aaa;padding:24px;font-size:13px">Nessun preventivo trovato</div>'; return; }
   lista.innerHTML='';
   filtered.slice().sort(function(a,b){return a.data.localeCompare(b.data);}).forEach(function(p){
-    var i=S.preventivi.indexOf(p), tot=calTot(p.voci,p.pax), saldo=tot-(p.cap||0);
+    var i=S.preventivi.indexOf(p), tot=calTotNetto(p), saldo=tot-(p.cap||0);
     var card=document.createElement('div'); card.className='arch-card';
     var head=document.createElement('div'); head.className='arch-head';
     head.innerHTML='<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px"><span class="list-name">'+p.cli+'</span>'+badge(p.stato)+'</div><div class="list-detail">'+p.tipo+' · '+fmtD(p.data,true)+' · '+p.pax+' pers.</div></div><div style="text-align:right;flex-shrink:0;margin-left:10px"><div class="list-price">'+fmt(tot)+'</div><div style="font-size:10px;color:#aaa">saldo '+fmt(saldo)+'</div></div>';
@@ -2253,9 +2334,11 @@ function renderArch() {
     (function(i2){ bMod.addEventListener('click',function(){ openPrev(i2); G.show('prev'); }); })(i);
     var bSt=document.createElement('button'); bSt.className='btn-sm'; bSt.style.flex='1'; bSt.textContent='Stato';
     (function(i2){ bSt.addEventListener('click',function(){ cambiaStato(i2); }); })(i);
+    var bDup=document.createElement('button'); bDup.className='btn-sm'; bDup.style.flex='1'; bDup.textContent='Duplica';
+    (function(i2){ bDup.addEventListener('click',function(){ duplicaPrev(i2); }); })(i);
     var bEl=document.createElement('button'); bEl.className='btn-sm btn-danger'; bEl.style.flex='1'; bEl.textContent='Elimina';
     (function(i2){ bEl.addEventListener('click',function(){ elimPrev(i2); }); })(i);
-    actD.appendChild(bMod); actD.appendChild(bSt);
+    actD.appendChild(bMod); actD.appendChild(bSt); actD.appendChild(bDup);
     if(p.tel&&p.tel.trim()){
       var waA=document.createElement('a'); waA.className='btn-wa'; waA.style.flex='1';
       waA.href=waUrl(p.tel,waMsg(p)); waA.target='_blank'; waA.rel='noopener';
@@ -2272,6 +2355,34 @@ function cambiaStato(i) {
   if(n>=1&&n<=4){S.preventivi[i].stato=stati[n-1];salva();renderArch();renderPrevLista();}
 }
 function elimPrev(i) { if(!confirm('Eliminare il preventivo di '+S.preventivi[i].cli+'?'))return; S.preventivi.splice(i,1);salva();renderArch();renderPrevLista(); }
+// ── DUPLICA PREVENTIVO ────────────────────────────────────────
+// Genera la prossima lettera libera (/A, /B, /C...) per un dato nome cliente base.
+// L'originale resta senza suffisso; le copie successive prendono /B, /C, ecc.
+function prossimoSuffisso(baseName) {
+  var usate = S.preventivi.reduce(function(acc,p){
+    var m = p.cli.match(/^(.*)\s\/([A-Z])$/);
+    if (m && m[1]===baseName) acc.push(m[2]);
+    return acc;
+  }, []);
+  var lettere = 'BCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (var k=0;k<lettere.length;k++){ if(usate.indexOf(lettere[k])===-1) return lettere[k]; }
+  return 'X'+(usate.length+1);
+}
+function duplicaPrev(i) {
+  var orig = S.preventivi[i];
+  var baseName = orig.cli.replace(/\s*\/[A-Z]$/,'').trim();
+  var suffisso = prossimoSuffisso(baseName);
+  var copia = JSON.parse(JSON.stringify(orig));
+  copia.id = S.nextId++;
+  copia.cli = baseName+' /'+suffisso;
+  copia.stato = 'Bozza';
+  S.preventivi.push(copia);
+  salva();
+  renderArch(); renderPrevLista();
+  openPrev(S.preventivi.length-1);
+  G.show('prev');
+  toast('Preventivo duplicato: '+copia.cli);
+}
 
 // ═══════════════════════════════════════════════════════════════
 // TAVOLI — logica completa
@@ -3087,6 +3198,16 @@ document.getElementById('btn-anteprima').addEventListener('click',mostraAnteprim
 document.getElementById('btn-chiudi-ant').addEventListener('click',function(){ document.getElementById('anteprima-wrap').style.display='none'; });
 document.getElementById('f-pax').addEventListener('input',function(){ calcTot(); renderServizi(); aggiornaServiziTot(); renderBevande(); aggiornaBevandeTot(); });
 document.getElementById('f-cap').addEventListener('input',calcTot);
+document.getElementById('f-sconto-tipo').addEventListener('change',function(){
+  var val=document.getElementById('f-sconto-val');
+  if(this.value==='nessuno'){ val.style.display='none'; val.value=0; }
+  else {
+    val.style.display='block';
+    val.placeholder = this.value==='perc' ? '% sconto' : (this.value==='persona' ? '€ per persona' : '€ importo');
+  }
+  calcTot();
+});
+document.getElementById('f-sconto-val').addEventListener('input',calcTot);
 
 // Archivio
 document.getElementById('btn-arch-nuovo').addEventListener('click',function(){ nuovoPrev(); G.show('prev'); });
