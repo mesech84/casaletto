@@ -2146,8 +2146,18 @@ function inviaPdfCondiviso(canale, finestraPreaperta) {
   statusInvioPdf('Genero il PDF, un attimo…');
   generaPdfBlob().then(function(blob){
     var nomeFile=nomeFilePreventivo();
-    // Scarica sempre il PDF sul dispositivo, poi apre Email/WhatsApp col messaggio pronto:
-    // andrà allegato manualmente (i browser non permettono di allegare file automaticamente a mailto/wa.me).
+    var file=new File([blob],nomeFile,{type:'application/pdf'});
+    // 1° tentativo: condivisione nativa con il file già allegato (Gmail/Thunderbird/WhatsApp compaiono come scelte).
+    // Nota: con questo metodo il destinatario email va comunque digitato a mano, perché la condivisione
+    // nativa non supporta il campo "a" — è un limite della funzione stessa, non un bug.
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      if(finestraPreaperta) finestraPreaperta.close();
+      statusInvioPdf('');
+      navigator.share({files:[file],title:nomeFilePreventivo(),text:'Preventivo per '+cli}).catch(function(){ /* utente ha annullato: nessuna azione */ });
+      return;
+    }
+    // Fallback: il dispositivo non supporta l'allegato automatico → scarico il PDF
+    // e apro Email/WhatsApp col messaggio pronto, chiedendo di allegarlo manualmente.
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a'); a.href=url; a.download=nomeFile; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 8000);
