@@ -2146,7 +2146,16 @@ function inviaPdfCondiviso(canale, finestraPreaperta) {
   statusInvioPdf('Genero il PDF, un attimo…');
   generaPdfBlob().then(function(blob){
     var nomeFile=nomeFilePreventivo();
-    // Scarica sempre il PDF sul dispositivo
+    var file=new File([blob],nomeFile,{type:'application/pdf'});
+    // 1° tentativo: condivisione nativa con il file già allegato (mostra le app disponibili sul dispositivo).
+    if (navigator.canShare && navigator.canShare({files:[file]})) {
+      if(finestraPreaperta) finestraPreaperta.close();
+      statusInvioPdf('');
+      navigator.share({files:[file],title:nomeFilePreventivo(),text:'Preventivo per '+cli}).catch(function(){ /* utente ha annullato: nessuna azione */ });
+      return;
+    }
+    // Fallback: il dispositivo non supporta l'allegato automatico → scarico il PDF
+    // e apro Email/WhatsApp col messaggio pronto, chiedendo di allegarlo manualmente.
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a'); a.href=url; a.download=nomeFile; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 8000);
@@ -2168,7 +2177,7 @@ function inviaPdfCondiviso(canale, finestraPreaperta) {
   }).catch(function(err){
     if(finestraPreaperta) finestraPreaperta.close();
     statusInvioPdf('');
-    alert('Non è stato possibile generare il PDF: '+(err&&err.message?err.message:'errore sconosciuto')+'\n\nVerifica di avere connessione internet (serve per caricare la libreria PDF la prima volta).');
+    alert('Non è stato possibile generare il PDF: '+(err&&err.message?err.message:'errore sconosciuto')+'\n\nSe l\'errore persiste, prova a chiudere e riaprire la pagina.');
   });
 }
 function mostraAnteprima() {
