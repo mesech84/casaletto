@@ -2102,7 +2102,7 @@ function generaPdfBlob() {
   // Neutralizza temporaneamente lo sfondo a texture della pagina (usa gradienti CSS che
   // in alcuni casi mandano in errore la libreria di generazione PDF durante la cattura).
   document.body.classList.add('pdf-generating');
-  return html2pdf().set({
+  var lavoro = html2pdf().set({
     margin:10,
     filename:nomeFilePreventivo(),
     image:{type:'jpeg',quality:0.95},
@@ -2112,7 +2112,13 @@ function generaPdfBlob() {
       return node.classList && node.classList.contains('screen') && !node.classList.contains('active');
     }},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-  }).from(el).outputPdf('blob').then(function(blob){
+  }).from(el).outputPdf('blob');
+  // Timeout di sicurezza: se la generazione dovesse restare bloccata (bug della libreria),
+  // dopo 20 secondi l'operazione viene comunque annullata invece di restare appesa per sempre.
+  var timeout = new Promise(function(_, reject){
+    setTimeout(function(){ reject(new Error('Generazione PDF troppo lenta o bloccata (timeout)')); }, 20000);
+  });
+  return Promise.race([lavoro, timeout]).then(function(blob){
     document.body.classList.remove('pdf-generating');
     return blob;
   }).catch(function(err){
