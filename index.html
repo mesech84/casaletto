@@ -2099,13 +2099,26 @@ function nomeFilePreventivo() {
 function generaPdfBlob() {
   var el=document.getElementById('pdf-out');
   if (!el || typeof html2pdf==='undefined') return Promise.reject(new Error('Libreria PDF non disponibile'));
+  // Neutralizza temporaneamente lo sfondo a texture della pagina (usa gradienti CSS che
+  // in alcuni casi mandano in errore la libreria di generazione PDF durante la cattura).
+  document.body.classList.add('pdf-generating');
   return html2pdf().set({
     margin:10,
     filename:nomeFilePreventivo(),
     image:{type:'jpeg',quality:0.95},
-    html2canvas:{scale:2,useCORS:true},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff',ignoreElements:function(node){
+      // Esclude dalla cattura le altre schermate dell'app nascoste (es. Tavoli con la griglia),
+      // che altrimenti causano un errore nella libreria PDF a causa delle loro dimensioni zero.
+      return node.classList && node.classList.contains('screen') && !node.classList.contains('active');
+    }},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-  }).from(el).outputPdf('blob');
+  }).from(el).outputPdf('blob').then(function(blob){
+    document.body.classList.remove('pdf-generating');
+    return blob;
+  }).catch(function(err){
+    document.body.classList.remove('pdf-generating');
+    throw err;
+  });
 }
 function statusInvioPdf(msg) {
   var s=document.getElementById('invia-pdf-status');
