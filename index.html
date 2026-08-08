@@ -2146,16 +2146,8 @@ function inviaPdfCondiviso(canale, finestraPreaperta) {
   statusInvioPdf('Genero il PDF, un attimo…');
   generaPdfBlob().then(function(blob){
     var nomeFile=nomeFilePreventivo();
-    var file=new File([blob],nomeFile,{type:'application/pdf'});
-    // 1° tentativo: condivisione nativa con il file già allegato (mostra le app disponibili sul dispositivo).
-    if (navigator.canShare && navigator.canShare({files:[file]})) {
-      if(finestraPreaperta) finestraPreaperta.close();
-      statusInvioPdf('');
-      navigator.share({files:[file],title:nomeFilePreventivo(),text:'Preventivo per '+cli}).catch(function(){ /* utente ha annullato: nessuna azione */ });
-      return;
-    }
-    // Fallback: il dispositivo non supporta l'allegato automatico → scarico il PDF
-    // e apro Email/WhatsApp col messaggio pronto, chiedendo di allegarlo manualmente.
+    // Scarica sempre il PDF sul dispositivo, poi apre Email/WhatsApp col messaggio pronto:
+    // andrà allegato manualmente (i browser non permettono di allegare file automaticamente a mailto/wa.me).
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a'); a.href=url; a.download=nomeFile; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 8000);
@@ -2163,7 +2155,7 @@ function inviaPdfCondiviso(canale, finestraPreaperta) {
       var email=document.getElementById('f-email').value;
       var oggetto='Preventivo '+tipo+' — '+cli;
       var corpo='Gentile '+cli+',\n\nin allegato il preventivo richiesto.\n\n(Il PDF è stato scaricato sul dispositivo: ricordati di allegarlo a questa email prima di inviarla)\n\nCordiali saluti.';
-      window.location.href='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(oggetto)+'&body='+encodeURIComponent(corpo);
+      window.location.href='mailto:'+email+'?subject='+encodeURIComponent(oggetto)+'&body='+encodeURIComponent(corpo);
       statusInvioPdf('✓ PDF scaricato. Allega il file all\'email appena aperta.');
     } else {
       var tel=document.getElementById('f-tel').value;
