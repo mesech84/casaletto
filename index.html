@@ -2153,7 +2153,7 @@ function inviaPdfCondiviso(canale, finestraPreaperta) {
     if (navigator.canShare && navigator.canShare({files:[file]})) {
       if(finestraPreaperta) finestraPreaperta.close();
       statusInvioPdf('');
-      navigator.share({files:[file],title:nomeFilePreventivo(),text:'Preventivo per '+cli}).catch(function(){ /* utente ha annullato: nessuna azione */ });
+      navigator.share({files:[file],title:'Preventivo '+tipo+' — '+cli,text:'Preventivo per '+cli+' del '+fmtD(document.getElementById('f-data').value)}).catch(function(){ /* utente ha annullato: nessuna azione */ });
       return;
     }
     // Fallback: il dispositivo non supporta l'allegato automatico → scarico il PDF
