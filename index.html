@@ -258,7 +258,7 @@ textarea.form-input{resize:vertical;min-height:60px;line-height:1.4}
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22AgriRistoro%20il%20Casaletto%22,%22short_name%22:%22Casaletto%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23ffffff%22,%22theme_color%22:%2227500a%22,%22icons%22:[{%22src%22:%22data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiI+CiAgPHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIHJ4PSIzOCIgZmlsbD0iI2ZmZmZmZiIvPgogIDx0ZXh0IHg9Ijk2IiB5PSIxMzAiIGZvbnQtc2l6ZT0iMTEwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXBwbGUgQ29sb3IgRW1vamksU2Vnb2UgVUkgRW1vamksTm90byBDb2xvciBFbW9qaSxzYW5zLXNlcmlmIj7wn4y/PC90ZXh0Pgo8L3N2Zz4=%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22},{%22src%22:%22data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CiAgPHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSIxMDAiIGZpbGw9IiNmZmZmZmYiLz4KICA8dGV4dCB4PSIyNTYiIHk9IjM0MCIgZm9udC1zaXplPSIyOTAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJBcHBsZSBDb2xvciBFbW9qaSxTZWdvZSBVSSBFbW9qaSxOb3RvIENvbG9yIEVtb2ppLHNhbnMtc2VyaWYiPvCfjL88L3RleHQ+Cjwvc3ZnPg==%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22}]}">
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMTkyIDE5MiI+CiAgPHJlY3Qgd2lkdGg9IjE5MiIgaGVpZ2h0PSIxOTIiIHJ4PSIzOCIgZmlsbD0iI2ZmZmZmZiIvPgogIDx0ZXh0IHg9Ijk2IiB5PSIxMzAiIGZvbnQtc2l6ZT0iMTEwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXBwbGUgQ29sb3IgRW1vamksU2Vnb2UgVUkgRW1vamksTm90byBDb2xvciBFbW9qaSxzYW5zLXNlcmlmIj7wn4y/PC90ZXh0Pgo8L3N2Zz4=">
 </head>
@@ -603,7 +603,7 @@ textarea.form-input{resize:vertical;min-height:60px;line-height:1.4}
 </div>
 
 <!-- TAVOLI -->
-<div class="screen" id="screen-tavoli" style="background:#d4d1c5">
+<div class="screen" id="screen-tavoli" style="background:#d4d1c5" data-html2canvas-ignore="true">
   <div class="card" style="padding:12px 14px;margin-bottom:10px">
     <div class="sec-title" style="margin-bottom:8px">Calcolo tavoli automatico</div>
     <div class="row2">
@@ -629,7 +629,7 @@ textarea.form-input{resize:vertical;min-height:60px;line-height:1.4}
     <div class="leg-item"><div class="leg-dot" style="background:#e6f1fb;border-color:#0c447c"></div>Riservato</div>
   </div>
   <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none" id="sala-tabs"></div>
-  <div class="piantina-outer"><div class="sala-perimetro" id="sala-peri"><div class="sala-name-badge" id="sala-badge">Sala</div><div class="piantina-canvas griglia-on" id="piantina" style="min-height:480px;position:relative"></div></div></div>
+  <div class="piantina-outer" data-html2canvas-ignore="true"><div class="sala-perimetro" id="sala-peri"><div class="sala-name-badge" id="sala-badge">Sala</div><div class="piantina-canvas griglia-on" id="piantina" style="min-height:480px;position:relative" data-html2canvas-ignore="true"></div></div></div>
   <p style="font-size:11px;color:#aaa;text-align:center;margin-top:8px">
   Trascina tavoli · <strong style="color:#2a5a2a">Tocca il blocco</strong> per modificarlo · Avvicina tavoli per ancorarli
   <span style="color:#ccc;font-size:10px;display:block;margin-top:2px">v13</span>
