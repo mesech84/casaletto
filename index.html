@@ -559,9 +559,9 @@ textarea.form-input{resize:vertical;min-height:60px;line-height:1.4}
         <div class="tot-row" id="tv-sub-row" style="display:none"><span>Subtotale</span><span id="tv-sub">—</span></div>
         <div class="tot-row" id="tv-sconto-row" style="display:none;color:#c07000"><span id="tv-sconto-lbl">Sconto</span><span id="tv-sconto">—</span></div>
         <div class="tot-row" style="font-weight:600;color:#1a1a1a;border-top:1px solid rgba(0,0,0,.1);margin-top:4px;padding-top:4px"><span>Totale evento</span><span id="tv2">—</span></div>
-        <div id="tv-pp-row" style="display:none;background:#27500a;border-radius:8px;padding:10px 12px;margin:8px 0;justify-content:space-between;align-items:baseline">
-          <span style="font-size:13px;color:#eaf3de">Prezzo finale a persona</span>
-          <span id="tv-pp" style="font-size:19px;font-weight:500;color:#eaf3de">—</span>
+        <div id="tv-pp-row" style="display:none;text-align:center;background:#eaf3de;border-radius:8px;padding:10px;margin:8px 0">
+          <div style="font-size:11px;color:#3b6d11;text-transform:uppercase;letter-spacing:.06em">Prezzo finale a persona</div>
+          <div id="tv-pp" style="font-size:24px;font-weight:500;color:#173404">—</div>
         </div>
         <div class="tot-row" style="color:#c07000"><span>Caparra richiesta</span><span id="tv3">—</span></div>
         <div class="tot-row main"><span>Saldo da versare</span><span id="tv4">—</span></div>
@@ -1968,7 +1968,7 @@ function calcTot() {
   // Prezzo finale a persona (totale evento diviso per il numero di ospiti)
   var rowPP=document.getElementById('tv-pp-row'), valPP=document.getElementById('tv-pp');
   if (pax>0) {
-    if(rowPP) rowPP.style.display='flex';
+    if(rowPP) rowPP.style.display='block';
     if(valPP) valPP.textContent=fmt(tot/pax);
   } else {
     if(rowPP) rowPP.style.display='none';
@@ -2359,7 +2359,7 @@ function mostraAnteprima() {
         })()
         +(_pdfSconto>0?'<div class="pdf-tr" style="border-top:0.5px solid #eee;margin-top:4px;padding-top:4px"><span>Subtotale</span><span>'+fmt(_pdfSub)+'</span></div><div class="pdf-tr" style="color:#c07000;font-weight:500"><span>'+labelSconto(_pdfScTipo,_pdfScVal)+'</span><span>&minus; '+fmt(_pdfSconto)+'</span></div>':'')
         +'<div class="pdf-tr main"><span>Totale evento</span><span>'+fmt(tot)+'</span></div>'
-        +(pax>0?'<div style="background:#27500a;border-radius:6px;padding:6px 10px;margin:6px 0;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:9px;color:#eaf3de">Prezzo finale a persona</span><span style="font-size:13px;font-weight:700;color:#eaf3de">'+fmt(tot/pax)+'</span></div>':'')
+        +(pax>0?'<div style="text-align:center;background:#eaf3de;border-radius:6px;padding:6px 10px;margin:6px 0"><div style="font-size:8px;color:#3b6d11;text-transform:uppercase;letter-spacing:.06em">Prezzo finale a persona</div><div style="font-size:15px;font-weight:700;color:#173404">'+fmt(tot/pax)+'</div></div>':'')
         +'<div class="pdf-tr" style="color:#c07000"><span>Caparra richiesta</span><span>&minus; '+fmt(cap)+'</span></div>'
         +'<div class="pdf-tr" style="font-weight:700"><span>Saldo da versare</span><span>'+fmt(tot-cap)+'</span></div>'
         +'</div>';
